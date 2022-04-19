@@ -1,5 +1,6 @@
 # Generated with SMOP  0.41-beta
-from libsmop import *
+# from libsmop import *
+from smop.libsmop import *
 # ../MIRtoolbox1.8.1/MIRtoolbox1.8.1/MIRToolbox/mirlowenergy.m
 
     
