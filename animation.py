@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 from playsound import playsound
-  
+from tempfeatureextraction import *
 # playsound('/path/note.wav')
  
 
@@ -28,47 +28,59 @@ def func(num, dataSet, line):
 # t = np.arange(0,20,0.2) # This would be the z-axis ('t' means time here)
 # x = np.cos(t)-1
 # y = 1/2*(np.cos(2*t)-1)
+print('Choose a number from 1-5 for the corresponding audio to be played')
+audio = input()
+audio = './Soundtrack_Snippets/' + audio + '.mp3'
+emotionRatingPrediction = extract_feature(audio)
+print(emotionRatingPrediction)
+# playsound(audio, False)
+x, y, t = (np.array(emotionRatingPrediction['valence']),np.array(emotionRatingPrediction['energy']),np.array(emotionRatingPrediction['tension']))
+print(x)
+x = np.round_(x,2)
+y = np.round_(y,2)
+t = np.round_(t,2)
+# print(type(x))
+# def run(x, y, t):
+# x = np.array([1,2,3,4,5,6,7,8,9,10])
+# y = np.array([10,22,34,46,51,64,77,85,92,10])
+# t = np.array([15,26,32,48,52,61,79,86,93,100])
+print(x)
+# print(type(x))
 
-def run():
-    x = np.array([1,2,3,4,5,6,7,8,9,10])
-    y = np.array([10,22,34,46,51,64,77,85,92,10])
-    t = np.array([15,26,32,48,52,61,79,86,93,100])
-    print(x)
-    print(y)
-    print(t)
-    dataSet = np.array([x, y, t])
-    numDataPoints = len(t)
-    
-    # GET SOME MATPLOTLIB OBJECTS
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    
-    # NOTE: Can't pass empty arrays into 3d version of plot()
-    line = plt.plot(dataSet[0], dataSet[1], dataSet[2], lw=2, c='g')[0] # For line plot
-    
-    # AXES PROPERTIES]
-    # ax.set_xlim3d([limit0, limit1])
-    ax.set_xlabel('X(t)')
-    ax.set_ylabel('Y(t)')
-    ax.set_zlabel('time')
-    ax.set_title('Trajectory of electron for E vector along [120]')
-    
-    # Creating the Animation object
-    line_ani = animation.FuncAnimation(fig, func, frames=numDataPoints, fargs=(dataSet,line), interval=500, blit=False)
-    #line_ani.save(r'AnimationNew.mp4')
-    
-    
-    plt.show()
+# print(y)
+# print(t)
+# dataSet = np.array([x, y, t])
+# numDataPoints = len(t)
 
-def main():
-    print('Choose a number from 1-5 for the corresponding audio to be played')
-    audio = input()
-    audio = './Soundtrack_Snippets/' + audio + '.mp3'
-    valence = extractFeature(audio)
-    energy = extractFeature(audio)
-    tension = extractFeature(audio)
-    playsound(audio, False)
-    run()
+# # GET SOME MATPLOTLIB OBJECTS
+fig = plt.figure()
+ax = Axes3D(fig)
 
-if __name__ == "__main__":
-    main()
+# NOTE: Can't pass empty arrays into 3d version of plot()
+line = plt.plot(dataSet[0], dataSet[1], dataSet[2], lw = 2, c = 'g')[0] # For line plot
+
+# AXES PROPERTIES]
+# ax.set_xlim3d([limit0, limit1])
+ax.set_xlabel('X(t)')
+ax.set_ylabel('Y(t)')
+ax.set_zlabel('time')
+ax.set_title('Trajectory of electron for E vector along [120]')
+
+# Creating the Animation object
+line_ani = animation.FuncAnimation(fig, func, frames=numDataPoints, fargs=(dataSet,line), interval=500, blit=False)
+#line_ani.save(r'AnimationNew.mp4')
+
+
+plt.show()
+
+# def main():
+    # print('Choose a number from 1-5 for the corresponding audio to be played')
+    # audio = input()
+    # audio = './Soundtrack_Snippets/' + audio + '.mp3'
+    # emotionRatingPrediction = extract_feature(audio)
+    # print(emotionRatingPrediction)
+    # # playsound(audio, False)
+    # run(np.array(emotionRatingPrediction['valence']),np.array(emotionRatingPrediction['energy']),np.array(emotionRatingPrediction['tension']))
+
+# if __name__ == "__main__":
+#     main()

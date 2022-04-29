@@ -31,6 +31,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn import datasets, linear_model, metrics
 from sklearn.decomposition import PCA
+import pickle
+from scipy.stats import yeojohnson
+
 
 '''
     function: extract_features
@@ -41,6 +44,45 @@ from sklearn.decomposition import PCA
     reads the file and extracts relevant features using librosa library for audio
     signal processing
 '''
+
+
+def run_model(feature_set):
+  # feature_set = extract_feature('./Soundtrack_Snippets/011.mp3')
+# feature_set.to_numpy()
+# print(feature_set)
+  audio_df = pd.read_csv('Emotion_features.csv')
+  audio_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
+  audio_df = audio_df.dropna(how = 'any',axis = 0)
+
+  feature_set.dropna(how = 'any', axis = 0) 
+  toPredict = ['valence', 'energy', 'tension']
+  emotionRatingPrediction = {}
+  X = audio_df.loc[:, "tempo" : "frame_var"]
+  featureName = list(X)
+  # lams = {}
+  for name in featureName:
+    X[name], lam = yeojohnson(X[name])
+    # lams[name] = lam
+    feature_set[name] = yeojohnson(feature_set[name], lmbda=lam)
+    # feature_set[name] = yeojohnson(feature_set[name], lmbda=lams[name])
+  # print(feature_set)
+  X = pd.DataFrame(X)
+
+  for pre in toPredict:
+    y = audio_df[pre]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
+    pca = PCA(n_components = 11)
+    X_train_transformed = pca.fit_transform(X_train)
+    feature_set_transformed = pca.transform(feature_set)
+
+    explained_variance = pca.explained_variance_ratio_
+    reg = linear_model.LinearRegression() #create linear regression object
+    reg.fit(X_train_transformed, y_train) #train the model using the training sets
+    pred = reg.predict(feature_set_transformed)
+    emotionRatingPrediction[pre] = pred
+  
+  return emotionRatingPrediction
+
 
 def extract_feature(audio):
     id = 0  # Song ID
@@ -112,7 +154,7 @@ def extract_feature(audio):
     S = np.abs(librosa.stft(y))
     
     time = 0
-    while time < len(y):
+    while time < len(y) - sr * 15:
       curr = y[time:min(len(y), time + 15 * sr)]
       print(len(curr), 15 * sr)
       time += sr * 15 
@@ -138,14 +180,14 @@ def extract_feature(audio):
       percussive = librosa.effects.percussive(curr)
       
       mfcc = librosa.feature.mfcc(y = curr, sr = sr)
-      mfcc_delta = librosa.feature.delta(mfcc)
+      mfcc_delta = librosa.feature.delta(mfcc, width=max(3, min(9, (mfcc.shape[-1] // 2) * 2 - 1)))
 
       onset_frames = librosa.onset.onset_detect(y = curr, sr = sr, hop_length = int(sr * 0.046 * 0.5))
       frames_to_time = librosa.frames_to_time(onset_frames[:20], sr = sr)
       
 
       # Transforming Features
-      songname_vector.append(mp3_file)  # song name
+      songname_vector.append(audio)  # song name
       tempo_vector.append(tempo) # tempo
       total_beats.append(sum(beats))  # beats
       average_beats.append(np.average(beats))
@@ -206,11 +248,11 @@ def extract_feature(audio):
       frame_std.append(np.std(frames_to_time))
       frame_var.append(np.var(frames_to_time))
       
-      print(mp3_file)
+      print(audio)
       id = id + 1
 
     # Concatenating Features into one csv and json format
-    feature_set['song_name'] = songname_vector  # song name
+    # feature_set['song_name'] = songname_vector  # song name
     feature_set['tempo'] = tempo_vector  # tempo 
     feature_set['total_beats'] = total_beats  # beats
     feature_set['average_beats'] = average_beats
@@ -270,36 +312,7 @@ def extract_feature(audio):
     feature_set['frame_mean'] = frame_mean  # frames
     feature_set['frame_std'] = frame_std
     feature_set['frame_var'] = frame_var
-    # feature_set.to_csv('Emotion_features.csv')
-    # feature_set.to_json('Emotion_features.json')
+    # return feature_set
 
-    return feature_set
-
-
-feature_set = extract_feature('./Soundtrack_Snippets/1.mp3')
-audio_df = pd.read_csv('Emotion_features.csv')
-audio_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
-audio_df = audio_df.dropna(how = 'any',axis = 0)
-
-"""# Classification of Emotions"""
-
-
-"""# Regression"""
-X = audio_df.loc[:, 'tempo':'frame_var']
-featureName = list(X)
-for name in featureName:
-  X[name] = (X[name]-X[name].min())/(X[name].max()-X[name].min())
-toPredict = ['valence', 'energy', 'tension', 'anger', 'fear', 'happy', 'sad', 'tender', 'beauty', 'liking']
-for pre in toPredict:
-  y = audio_df[pre]
-  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2,
-                                                      random_state = 42)
-  pca = PCA(n_components = 12)
-  X_train = pca.fit_transform(X_train)
-  X_test = pca.transform(X_test)
-  explained_variance = pca.explained_variance_ratio_
-  print(explained_variance)
-  reg = linear_model.LinearRegression() #create linear regression object
-  reg.fit(X_train, y_train) #train the model using the training sets
-  pred = reg.predict(feature_set)
-  print(pre + ' ----> ' + str(pred))
+    emotionRatingPrediction = run_model(feature_set)
+    return emotionRatingPrediction
