@@ -97,7 +97,7 @@ function randArr(num, mul) {
 
 // export default App;
 export default function App() {
-  var rows = [], i = 0, len = 5;
+  var rows = [], i = 0, len = 1;
   while (++i <= len) rows.push(i);
 
   return (
