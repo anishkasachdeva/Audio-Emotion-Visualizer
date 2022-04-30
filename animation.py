@@ -4,6 +4,10 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 from playsound import playsound
 from tempfeatureextraction import *
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import numpy as np
+
 # playsound('/path/note.wav')
  
 
@@ -24,54 +28,63 @@ def func(num, dataSet, line):
     return line
  
  
+
+def animate(emotionRatingPrediction):
+
+
 # THE DATA POINTS
 # t = np.arange(0,20,0.2) # This would be the z-axis ('t' means time here)
 # x = np.cos(t)-1
 # y = 1/2*(np.cos(2*t)-1)
-print('Choose a number from 1-5 for the corresponding audio to be played')
-audio = input()
-audio = './Soundtrack_Snippets/' + audio + '.mp3'
-emotionRatingPrediction = extract_feature(audio)
-print(emotionRatingPrediction)
+# print('Choose a number from 1-5 for the corresponding audio to be played')
+# audio = input()
+# audio = './Soundtrack_Snippets/' + audio + '.mp3'
+
+# emotionRatingPrediction = extract_feature(audio)
+# print(emotionRatingPrediction)
 # playsound(audio, False)
-x, y, t = (np.array(emotionRatingPrediction['valence']),np.array(emotionRatingPrediction['energy']),np.array(emotionRatingPrediction['tension']))
-print(x)
-x = np.round_(x,2)
-y = np.round_(y,2)
-t = np.round_(t,2)
-# print(type(x))
-# def run(x, y, t):
-# x = np.array([1,2,3,4,5,6,7,8,9,10])
-# y = np.array([10,22,34,46,51,64,77,85,92,10])
-# t = np.array([15,26,32,48,52,61,79,86,93,100])
-print(x)
-# print(type(x))
+    print(type(emotionRatingPrediction))
+    print(emotionRatingPrediction)
+    print(emotionRatingPrediction[0])
+    x = np.round_(emotionRatingPrediction[0],2)
+    y = np.round_(emotionRatingPrediction[1],2)
+    t = np.round_(emotionRatingPrediction[2],2)
 
-# print(y)
-# print(t)
-# dataSet = np.array([x, y, t])
-# numDataPoints = len(t)
+    
+    print(x)
+    print(y)
+    print(t)
 
-# # GET SOME MATPLOTLIB OBJECTS
-fig = plt.figure()
-ax = Axes3D(fig)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    # ax = Axes3D(fig)
+    
+    # t = np.arange(0,20,0.2)
+    # x = np.cos(t)-1
+    # y = 1/2*(np.cos(2*t)-1)
 
-# NOTE: Can't pass empty arrays into 3d version of plot()
-line = plt.plot(dataSet[0], dataSet[1], dataSet[2], lw = 2, c = 'g')[0] # For line plot
+    # print(type(t))
+    
+    
+    # For scatter plot
+    # ax.scatter(x, y, t, c='r', marker='o')
+    ax.plot(2, 3, 4, c='r', marker='o')
+    # ax.plot(x, y, t, c='r', marker='o')
+    # # For line plot
+    # ax.plot(x, y, t, c='g')
+    
+    ax.set_xlabel('X(t)')
+    ax.set_ylabel('Y(t)')
+    ax.set_zlabel('time')
+    ax.set_title('Trajectory of electron for E vector along [120]')
 
-# AXES PROPERTIES]
-# ax.set_xlim3d([limit0, limit1])
-ax.set_xlabel('X(t)')
-ax.set_ylabel('Y(t)')
-ax.set_zlabel('time')
-ax.set_title('Trajectory of electron for E vector along [120]')
-
-# Creating the Animation object
-line_ani = animation.FuncAnimation(fig, func, frames=numDataPoints, fargs=(dataSet,line), interval=500, blit=False)
-#line_ani.save(r'AnimationNew.mp4')
+    # Creating the Animation object
+    # line_ani = animation.FuncAnimation(fig, func, frames=numDataPoints, fargs=(dataSet,line), interval=500, blit=False)
+    #line_ani.save(r'AnimationNew.mp4')
 
 
-plt.show()
+    plt.show()
 
 # def main():
     # print('Choose a number from 1-5 for the corresponding audio to be played')

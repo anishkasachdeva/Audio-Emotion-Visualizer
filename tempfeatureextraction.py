@@ -8,7 +8,7 @@ Original file is located at
 """
 
 import librosa
-import librosa.display
+# import librosa.display
 import numpy as np
 import pandas as pd
 from os import listdir
@@ -16,7 +16,7 @@ from os.path import isfile, join
 import warnings
 import sklearn
 import matplotlib.pyplot as plt
-import IPython.display as ipd
+# import IPython.display as ipd
 import antropy
 # import timbral_models
 from sklearn.cross_decomposition import PLSRegression
@@ -33,8 +33,21 @@ from sklearn import datasets, linear_model, metrics
 from sklearn.decomposition import PCA
 import pickle
 from scipy.stats import yeojohnson
+import matplotlib.animation as animation
 
+# from animation import *
 
+import numpy as np
+import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
+import matplotlib
+matplotlib.use('TkAgg')
+from mpl_toolkits.mplot3d import Axes3D
+from playsound import playsound
+from tempfeatureextraction import *
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import numpy as np
 '''
     function: extract_features
     input: path to mp3 files
@@ -45,43 +58,84 @@ from scipy.stats import yeojohnson
     signal processing
 '''
 
-
-def run_model(feature_set):
-  # feature_set = extract_feature('./Soundtrack_Snippets/011.mp3')
-# feature_set.to_numpy()
-# print(feature_set)
+def run_model(feature_set, model='pls', apply_transformation=True, toPredict=['valence', 'energy', 'tension']):
+  feature_set.dropna(how = 'any', axis = 0) 
   audio_df = pd.read_csv('Emotion_features.csv')
   audio_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
   audio_df = audio_df.dropna(how = 'any',axis = 0)
-
-  feature_set.dropna(how = 'any', axis = 0) 
-  toPredict = ['valence', 'energy', 'tension']
-  emotionRatingPrediction = {}
   X = audio_df.loc[:, "tempo" : "frame_var"]
   featureName = list(X)
-  # lams = {}
-  for name in featureName:
-    X[name], lam = yeojohnson(X[name])
-    # lams[name] = lam
-    feature_set[name] = yeojohnson(feature_set[name], lmbda=lam)
-    # feature_set[name] = yeojohnson(feature_set[name], lmbda=lams[name])
-  # print(feature_set)
+  if apply_transformation == True:
+    for name in featureName:
+      X[name], lam = yeojohnson(X[name])
+      feature_set[name] = yeojohnson(feature_set[name], lmbda=lam)
   X = pd.DataFrame(X)
-
+  emotionRatingPrediction = {}
+  r2s = {}
   for pre in toPredict:
     y = audio_df[pre]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
-    pca = PCA(n_components = 11)
-    X_train_transformed = pca.fit_transform(X_train)
-    feature_set_transformed = pca.transform(feature_set)
+    if model == "pls":
+      pls = PLSRegression(n_components = 10)
+      pls.fit(X_train, y_train)
+      # rmse = np.sqrt(mean_squared_error(y_test, pls.predict(X_test)))
+      r2 = pls.score(X_train, y_train)
+      pred = pls.predict(feature_set)
+    elif model == "lr" or model == "lr_pca":
+      reg = linear_model.LinearRegression()
+      reg.fit(X_train, y_train)
+      r2 = reg.score(X_train, y_train)
+      pred = reg.predict(feature_set)
+    elif model == "lr_pca":
+      pca = PCA(n_components = 11)
+      X_train_transformed = pca.fit_transform(X_train)
+      feature_set_transformed = pca.transform(feature_set)
+      explained_variance = pca.explained_variance_ratio_
+      reg = linear_model.LinearRegression()
+      reg.fit(X_train_transformed, y_train)
+      r2 = reg.score(X_train_transformed, y_train)
+      pred = reg.predict(feature_set_transformed)
+    emotionRatingPrediction[pre] = pred.flatten()
+    r2s[pre] = r2
+  return emotionRatingPrediction, r2s
+# def run_model(feature_set):
+#   # feature_set = extract_feature('./Soundtrack_Snippets/011.mp3')
+# # feature_set.to_numpy()
+# # print(feature_set)
+#   audio_df = pd.read_csv('Emotion_features.csv')
+#   audio_df.drop(['Unnamed: 0'], axis = 1, inplace = True)
+#   audio_df = audio_df.dropna(how = 'any',axis = 0)
 
-    explained_variance = pca.explained_variance_ratio_
-    reg = linear_model.LinearRegression() #create linear regression object
-    reg.fit(X_train_transformed, y_train) #train the model using the training sets
-    pred = reg.predict(feature_set_transformed)
-    emotionRatingPrediction[pre] = pred
+#   feature_set.dropna(how = 'any', axis = 0) 
+#   toPredict = ['valence', 'energy', 'tension']
+#   emotionRatingPrediction = []
+#   X = audio_df.loc[:, "tempo" : "frame_var"]
+#   featureName = list(X)
+#   # lams = {}
+#   for name in featureName:
+#     X[name], lam = yeojohnson(X[name])
+#     # lams[name] = lam
+#     feature_set[name] = yeojohnson(feature_set[name], lmbda=lam)
+#     # feature_set[name] = yeojohnson(feature_set[name], lmbda=lams[name])
+#   # print(feature_set)
+#   X = pd.DataFrame(X)
+
+#   for pre in toPredict:
+#     y = audio_df[pre]
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
+#     pca = PCA(n_components = 11)
+#     X_train_transformed = pca.fit_transform(X_train)
+#     feature_set_transformed = pca.transform(feature_set)
+
+#     explained_variance = pca.explained_variance_ratio_
+#     reg = linear_model.LinearRegression() #create linear regression object
+#     reg.fit(X_train_transformed, y_train) #train the model using the training sets
+#     pred = reg.predict(feature_set_transformed)
+#     # list1 = pred.tolist()
+#     # print(type(pred))
+#     emotionRatingPrediction.append(pred)
   
-  return emotionRatingPrediction
+#   return emotionRatingPrediction
 
 
 def extract_feature(audio):
@@ -316,3 +370,103 @@ def extract_feature(audio):
 
     emotionRatingPrediction = run_model(feature_set)
     return emotionRatingPrediction
+
+def func(num, dataSet, line):
+    # NOTE: there is no .set_data() for 3 dim data...
+    line.set_data(dataSet[0:2, :num])    
+    line.set_3d_properties(dataSet[2, :num])    
+    return line
+
+
+def main():
+    print('Choose a number from 1-5 for the corresponding audio to be played')
+    audio = input()
+    audio = './Soundtrack_Snippets/' + audio + '.mp3'
+    emotionRatingPrediction,r2s = extract_feature(audio)
+    print(emotionRatingPrediction)
+    x = np.round_(emotionRatingPrediction['valence'],2)
+    y = np.round_(emotionRatingPrediction['energy'],2)
+    t = np.round_(emotionRatingPrediction['tension'],2)
+
+    dataSet = np.array([x, y, t])
+    numDataPoints = len(t)
+    print(dataSet)
+    # GET SOME MATPLOTLIB OBJECTS
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    
+    # NOTE: Can't pass empty arrays into 3d version of plot()
+    line = plt.plot(dataSet[0], dataSet[1], dataSet[2], lw=2, c = 'g', marker='o')[0] # For line plot
+    
+    # AXES PROPERTIES]
+    # ax.set_xlim3d([limit0, limit1])
+    ax.set_xlabel('Valence')
+    ax.set_ylabel('Energy')
+    ax.set_zlabel('Tension')
+    ax.set_title('Emotion Trajectory')
+    
+    # Creating the Animation object
+    line_ani = animation.FuncAnimation(fig, func, frames=numDataPoints, fargs=(dataSet,line), interval = 15000, blit=False)
+    #line_ani.save(r'AnimationNew.mp4')
+    
+    playsound(audio, False)
+    plt.show()
+
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    # print(x,y,t)
+    # ax.scatter(x, y, t, c='r', marker='o')
+    # ax.plot(x, y, t, c='g')
+    # ax.set_xlabel('Valence')
+    # ax.set_ylabel('Energy')
+    # ax.set_zlabel('Tension')
+    # ax.set_title('Emotion Trajectory of Audio')
+    # plt.show()
+
+if __name__ == "__main__":
+  main()
+
+
+
+
+
+
+ 
+ 
+# THE DATA POINTS
+# t = np.arange(0,20,0.2) # This would be the z-axis ('t' means time here)
+# x = np.cos(t)-1
+# y = 1/2*(np.cos(2*t)-1)
+# def run():
+#     x = [5.08157519 5.43102043 5.2754768 ]
+#     y = [7.99252103 7.93622085 8.11234732]
+#     t = [7.01758715 6.80033354 6.9826125 ]
+#     # x = np.array([1.8,2.7,3.56,4,5,6,7,8,9,10])
+#     # y = np.array([10.23,22.45,34,46,51.56,64,77,85,92,10])
+#     # t = np.array([15,26,32,48,52,61,79,86,93,100])
+#     print(x)
+#     print(y)
+#     print(t)
+    # dataSet = np.array([x, y, t])
+    # numDataPoints = len(t)
+    
+    # # GET SOME MATPLOTLIB OBJECTS
+    # fig = plt.figure()
+    # ax = Axes3D(fig)
+    
+    # # NOTE: Can't pass empty arrays into 3d version of plot()
+    # line = plt.plot(dataSet[0], dataSet[1], dataSet[2], lw=2, c='g')[0] # For line plot
+    
+    # # AXES PROPERTIES]
+    # # ax.set_xlim3d([limit0, limit1])
+    # ax.set_xlabel('X(t)')
+    # ax.set_ylabel('Y(t)')
+    # ax.set_zlabel('time')
+    # ax.set_title('Trajectory of electron for E vector along [120]')
+    
+    # # Creating the Animation object
+    # line_ani = animation.FuncAnimation(fig, func, frames=numDataPoints, fargs=(dataSet,line), interval=500, blit=False)
+    # #line_ani.save(r'AnimationNew.mp4')
+    
+    
+    # plt.show()
